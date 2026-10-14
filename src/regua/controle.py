@@ -117,16 +117,23 @@ class Controle:
             )
 
     # ------------------------------------------------------------ notificações
-    def maior_marco_enviado(self, modo: str) -> dict[tuple[str, date], int]:
-        """{(cpf, vencimento_base): maior marco já ENVIADO}."""
+    def ultima_carta_enviada(self, modo: str) -> dict[tuple[str, date], tuple[int, int]]:
+        """
+        {(cpf, vencimento_base): (maior marco já ENVIADO, dias de atraso quando ele foi enviado)}.
+        Como o ciclo tem o mesmo vencimento_base, dias_atraso_hoje - dias_no_envio = dias desde a carta.
+        """
         n = notificacao.c
         with self.engine.connect() as conn:
             linhas = conn.execute(
-                select(n.cpf, n.vencimento_base, func.max(n.marco_dias))
+                select(n.cpf, n.vencimento_base, n.marco_dias, n.dias_atraso)
                 .where(n.modo == modo, n.status == "ENVIADO")
-                .group_by(n.cpf, n.vencimento_base)
             ).all()
-        return {(cpf, venc): int(marco) for cpf, venc, marco in linhas}
+        resultado: dict = {}
+        for cpf, venc, marco, dias in linhas:
+            atual = resultado.get((cpf, venc))
+            if atual is None or int(marco) > atual[0]:
+                resultado[(cpf, venc)] = (int(marco), int(dias))
+        return resultado
 
     @staticmethod
     def _valores(execucao_id: int, modo: str, c: dict, provedor: str, enviado_para: str | None) -> dict:

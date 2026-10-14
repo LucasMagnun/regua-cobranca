@@ -37,8 +37,9 @@ class Marco:
 # O documento de 60 dias veio sem assunto: o texto abaixo é provisório até confirmação.
 ASSUNTOS = {
     "aviso": "Regularização de Pendência",
-    "suspensao": "Regularização de Pendência e Reativação do Plano de Saúde",
-    "cancelamento": "Cancelamento do Plano por Inadimplência",
+    # Provisórios (os textos passaram a avisar, no futuro): confirmar com a PO
+    "suspensao": "Regularização de Pendência e Aviso de Suspensão do Plano de Saúde",
+    "cancelamento": "Regularização de Pendência e Aviso de Cancelamento do Plano de Saúde",
 }
 
 MODOS = {"teste", "producao"}
@@ -131,6 +132,8 @@ class Config:
     dias_atraso_maximo: int | None
     pausa_entre_envios: float
     max_tentativas: int
+    # Dias mínimos entre uma carta e a seguinte. None = a distância natural entre os marcos (15, depois 30).
+    intervalo_entre_cartas: int | None = None
 
     @property
     def em_teste(self) -> bool:
@@ -222,9 +225,10 @@ def carregar() -> Config:
         marcos=_marcos(_texto("MARCOS", "15:aviso,30:suspensao,60:cancelamento") or ""),
         movimentos=_lista("MOVIMENTOS", "EM_NEGOCIACAO"),
         situacoes_plano_ignorar=_lista("SITUACOES_PLANO_IGNORAR", ""),
-        situacao_exigida=_situacao_exigida(_texto("SITUACAO_EXIGIDA", "suspensao:SUSPENSO,cancelamento:CANCELADO") or ""),
+        situacao_exigida=_situacao_exigida(_texto("SITUACAO_EXIGIDA", "") or ""),
         max_envios=max_envios,
         dias_atraso_maximo=_inteiro("DIAS_ATRASO_MAXIMO"),
         pausa_entre_envios=pausa,
         max_tentativas=_inteiro("MAX_TENTATIVAS", 3) or 3,
+        intervalo_entre_cartas=_inteiro("INTERVALO_ENTRE_CARTAS_DIAS"),
     )

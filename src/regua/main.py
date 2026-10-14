@@ -54,7 +54,9 @@ def executar(cfg: config_mod.Config, controle: Controle, provedor=None, hoje: da
         candidatos = regras.calcular_candidatos(
             dados, cfg.marcos, hoje, cfg.situacoes_plano_ignorar, cfg.dias_atraso_maximo, cfg.situacao_exigida
         )
-        candidatos = regras.filtrar_ja_notificados(candidatos, controle.maior_marco_enviado(cfg.modo_registro))
+        candidatos = regras.proxima_carta(
+            candidatos, controle.ultima_carta_enviada(cfg.modo_registro), cfg.marcos, cfg.intervalo_entre_cartas
+        )
         totais["candidatos"] = len(candidatos)
 
         # Mais atrasados primeiro: se houver limite, eles são os priorizados.

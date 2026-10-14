@@ -55,12 +55,19 @@ def abrir_tunel(stack: ExitStack, cache: dict, prefixo: str) -> tuple[str, int]:
     auth: dict = {}
     key_path = _ssh_env(prefixo, "KEY_PATH")
     if key_path:
-        auth["ssh_pkey"] = os.path.expanduser(key_path)
+        key_path = os.path.expanduser(key_path)
+        if not os.path.isfile(key_path):
+            raise FileNotFoundError(f"{prefixo}_SSH_KEY_PATH: arquivo de chave não encontrado: {key_path}")
+        auth["ssh_pkey"] = key_path
         passphrase = _ssh_env(prefixo, "KEY_PASSPHRASE")
         if passphrase:
             auth["ssh_private_key_password"] = passphrase
     else:
-        auth["ssh_password"] = _ssh_env(prefixo, "PASSWORD")
+        senha = _ssh_env(prefixo, "PASSWORD")
+        if not senha:
+            raise ValueError(f"{prefixo}_SSH_HOST está definido, mas faltam {prefixo}_SSH_KEY_PATH "
+                             f"(ou {prefixo}_SSH_PASSWORD)")
+        auth["ssh_password"] = senha
 
     tunel = SSHTunnelForwarder(
         (ssh_host, ssh_port),

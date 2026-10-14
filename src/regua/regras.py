@@ -4,10 +4,12 @@ Regras da régua de cobrança.
 Por BENEFICIÁRIO (não por boleto):
   - considera as cobranças com vencimento já passado;
   - dias de atraso = hoje - vencimento MAIS ANTIGO em aberto (vencimento_base);
-  - o marco é o MAIOR marco atingido (ex.: 35 dias -> 30/suspensão), desde que a situação
-    do plano no ERP confirme o que o e-mail afirma (30 dias -> SUSPENSO, 60 -> CANCELADO);
-    se o ERP ainda não aplicou, vale o maior marco permitido e o seguinte sai depois;
-  - recebe só esse marco, se ainda não recebeu ele (ou um maior) para o mesmo vencimento_base.
+  - as cartas saem EM SEQUÊNCIA (15 -> 30 -> 60), uma por vez, sem pular nenhuma
+    (decisão da PO: todos recebem as 3, inclusive quem já tem mais de 60 dias de atraso);
+  - a próxima carta sai quando: o atraso já atingiu o marco dela, o ERP confirma a situação
+    exigida (só se SITUACAO_EXIGIDA estiver preenchida; por padrão, desligada)
+    e já passou o intervalo mínimo desde a carta anterior (por padrão, 15 e depois 30 dias,
+    a mesma distância entre os marcos).
 
 O vencimento_base identifica o "ciclo" de inadimplência: se a pessoa quita e volta a
 atrasar depois, o vencimento mais antigo muda e a régua recomeça do primeiro aviso.
@@ -82,6 +84,8 @@ def calcular_candidatos(
             continue
         primeiro = grupo.iloc[0]
         # Marcos que afirmam suspensão/cancelamento só valem se o ERP já aplicou a situação.
+        # O teto é o maior marco permitido; os anteriores a ele também valem (quem está
+        # CANCELADO já passou pela suspensão, então pode receber a carta de 30 dias).
         situacao = str(primeiro["situacao_plano"] or "").strip().upper()
         permitidos = [m for m in atingidos if m.tipo not in exigida or exigida[m.tipo] == situacao]
         if not permitidos:
@@ -124,16 +128,44 @@ def calcular_candidatos(
     return df
 
 
-def filtrar_ja_notificados(candidatos: pd.DataFrame, maior_marco_enviado: dict) -> pd.DataFrame:
+def proxima_carta(
+    candidatos: pd.DataFrame,
+    ultima_carta: dict,
+    marcos: tuple[Marco, ...],
+    intervalo_minimo: int | None = None,
+) -> pd.DataFrame:
     """
-    Remove quem já recebeu este marco (ou um maior) para o mesmo vencimento_base.
-    maior_marco_enviado: {(cpf, vencimento_base): maior marco_dias com status ENVIADO}
+    Define QUAL carta cada candidato recebe hoje: a seguinte à última já enviada no ciclo.
+
+    candidatos: saída de calcular_candidatos; ali marco_dias é o maior marco PERMITIDO (o teto).
+    ultima_carta: {(cpf, vencimento_base): (marco_dias enviado, dias de atraso no dia do envio)}
+    intervalo_minimo: dias entre cartas; None = distância natural entre os marcos.
     """
     if candidatos.empty:
         return candidatos
-    ja = candidatos.apply(
-        lambda r: maior_marco_enviado.get((r["cpf"], r["vencimento_base"]), -1) >= r["marco_dias"], axis=1
-    )
-    if ja.any():
-        log.info("Já notificados anteriormente (ignorados): %d", int(ja.sum()))
-    return candidatos[~ja].reset_index(drop=True)
+    ordem = sorted(marcos, key=lambda m: m.dias)
+    linhas, concluidos, aguardando = [], 0, 0
+    for c in candidatos.to_dict("records"):
+        enviado, dias_no_envio = ultima_carta.get((c["cpf"], c["vencimento_base"]), (None, None))
+        seguintes = [m for m in ordem if enviado is None or m.dias > enviado]
+        if not seguintes:
+            concluidos += 1                       # já recebeu as 3 cartas deste ciclo
+            continue
+        proximo = seguintes[0]
+        if proximo.dias > c["marco_dias"]:
+            continue                              # ainda não atingiu ou o ERP ainda não confirma
+        if enviado is not None:
+            intervalo = intervalo_minimo if intervalo_minimo is not None else proximo.dias - enviado
+            if c["dias_atraso"] - dias_no_envio < intervalo:
+                aguardando += 1
+                continue
+        linhas.append({**c, "marco_dias": proximo.dias, "marco_tipo": proximo.tipo})
+
+    if concluidos:
+        log.info("Já receberam todas as cartas do ciclo: %d", concluidos)
+    if aguardando:
+        log.info("Aguardando o intervalo mínimo desde a carta anterior: %d", aguardando)
+    df = pd.DataFrame(linhas, columns=candidatos.columns)
+    if not df.empty:
+        log.info("Cartas a enviar hoje: %d %s", len(df), df.groupby("marco_tipo").size().to_dict())
+    return df

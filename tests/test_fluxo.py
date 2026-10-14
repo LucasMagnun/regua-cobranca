@@ -55,27 +55,46 @@ def test_fluxo_completo_sem_duplicar(ambiente):
     prov = Captura()
 
     r1 = executar(cfg, controle, prov, HOJE, DADOS)
-    # aviso, suspensão, cancelamento e "aguardando ERP" (aviso); sem e-mail fica registrado
+    # 1ª execução: todos começam pela carta de 15 dias (as 3 cartas saem em sequência); sem e-mail fica registrado
     assert (r1["enviados"], r1["sem_email"], r1["erros"]) == (4, 1, 0)
     assert all(e.para_email == "caixa.teste@exemplo.com" for e in prov.enviados)   # modo teste redireciona
     assert all(e.assunto.startswith("[TESTE]") for e in prov.enviados)
     assert any("seria enviado para: teste.aviso@exemplo.com" in e.html for e in prov.enviados)
-    assunto = {e.tags[0]: e.assunto for e in prov.enviados}
-    assert assunto["aviso"] == "[TESTE] Regularização de Pendência"
-    assert assunto["suspensao"] == "[TESTE] Regularização de Pendência e Reativação do Plano de Saúde"
+    assert {e.tags[0] for e in prov.enviados} == {"aviso"}
+    assert prov.enviados[0].assunto == "[TESTE] Regularização de Pendência"
 
     r2 = executar(cfg, controle, prov, HOJE, DADOS)          # mesmo dia: ninguém recebe de novo
     assert r2["enviados"] == 0 and len(prov.enviados) == 4
 
-    # 15 dias depois, e o ERP suspendeu a "Aviso" (agora com 33 dias)
-    dados = exemplo.gerar(HOJE)
-    dados.segurados.loc[dados.segurados["nome"] == "Beneficiária Teste Aviso", "situacao_plano"] = "SUSPENSO"
-    r3 = executar(cfg, controle, prov, HOJE + timedelta(days=15), dados)
+    # 15 dias depois: quem recebeu a de 15 recebe a de 30 (sem depender do ERP: o texto só avisa)
+    r3 = executar(cfg, controle, prov, HOJE + timedelta(days=15), DADOS)
     novos = {(e.para_nome, e.tags[0]) for e in prov.enviados[4:]}
-    # Aviso: 33 dias + SUSPENSO -> suspensão | Em Dia: 6 -> 21 dias -> aviso
-    # Aguardando ERP: 55 dias mas ainda ATIVO -> continua no aviso (já recebido): nada novo
-    assert novos == {("Beneficiária Teste Aviso", "suspensao"), ("Beneficiário Teste Em Dia", "aviso")}
+    assert novos == {
+        ("Beneficiária Teste Aviso", "suspensao"),
+        ("Beneficiário Teste Suspensão", "suspensao"),
+        ("Beneficiária Teste Cancelamento", "suspensao"),
+        ("Beneficiário Teste Aguardando ERP", "suspensao"),
+        ("Beneficiário Teste Em Dia", "aviso"),                # 6 -> 21 dias: entra na régua
+    }
     assert r3["erros"] == 0
+    assunto = {e.tags[0]: e.assunto for e in prov.enviados}
+    assert assunto["suspensao"] == "[TESTE] Regularização de Pendência e Aviso de Suspensão do Plano de Saúde"
+    html_susp = next(e.html for e in prov.enviados if e.tags[0] == "suspensao")
+    assert "será" in html_susp and "houve a" not in html_susp
+
+    # 30 dias depois da carta de 30: a de 60 | "Em Dia" (51 dias) recebe a de 30
+    executar(cfg, controle, prov, HOJE + timedelta(days=45), DADOS)
+    tipos = {}
+    for e in prov.enviados[9:]:
+        tipos.setdefault(e.tags[0], set()).add(e.para_nome)
+    assert tipos["cancelamento"] == {"Beneficiária Teste Aviso", "Beneficiário Teste Suspensão",
+                                     "Beneficiária Teste Cancelamento", "Beneficiário Teste Aguardando ERP"}
+    assert tipos["suspensao"] == {"Beneficiário Teste Em Dia"}
+
+    # Depois das 3 cartas, não recebe mais nada no mesmo ciclo
+    executar(cfg, controle, prov, HOJE + timedelta(days=90), DADOS)
+    assert {(e.para_nome, e.tags[0]) for e in prov.enviados[14:]} == {("Beneficiário Teste Em Dia", "cancelamento")}
+
     st = _status(controle)
     assert st["Beneficiária Teste Aviso|aviso"] == "ENVIADO"
     assert st["Beneficiária Teste Aviso|suspensao"] == "ENVIADO"

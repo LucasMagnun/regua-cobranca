@@ -9,7 +9,9 @@ Job diário que avisa por e-mail os titulares inadimplentes conforme o tempo de 
 | ≥ 60 | Aviso de cancelamento |
 
 O atraso é contado **por beneficiário**, a partir do **vencimento mais antigo em aberto**.
-Cada pessoa recebe só o maior marco atingido, uma única vez por ciclo de inadimplência.
+As **3 cartas saem em sequência** (15 → 30 → 60), uma por vez, sem pular nenhuma, inclusive para
+quem já tem mais de 60 dias de atraso na primeira execução (decisão da PO). Entre uma carta e a
+seguinte há um intervalo mínimo: por padrão, 15 dias e depois 30 (`INTERVALO_ENTRE_CARTAS_DIAS`).
 
 ## Fluxo
 
@@ -113,16 +115,17 @@ O Cloud Run Jobs marca a execução como falha quando o código é diferente de 
 
 ## Regras que vêm dos textos aprovados
 - Os textos estão em `src/regua/templates/`, fiéis aos documentos `notificacao_15/30/60_dias_versao_final_1.docx`.
-- Os e-mails de 30 e 60 dias **afirmam** que houve suspensão/cancelamento. Por isso só saem quando a situação
-  do plano no ERP confirma (`SITUACAO_EXIGIDA=suspensao:SUSPENSO,cancelamento:CANCELADO`). Até lá, a pessoa
-  recebe o maior marco permitido, e o seguinte sai quando o ERP atualizar.
+- Os e-mails de 30 e 60 dias **avisam** que o plano *será* suspenso/cancelado (ajuste aprovado pela PO; os
+  documentos originais diziam "houve"). Por isso não dependem da situação no ERP. Se um dia voltarem a afirmar
+  um fato, dá para exigir a situação com `SITUACAO_EXIGIDA=suspensao:SUSPENSO,cancelamento:CANCELADO`.
 - Os três textos citam um **boleto com vencimento**. Em produção, sem boleto o e-mail não sai: fica para a
   próxima execução e não conta tentativa. Em teste, aparece `<dd/mm/aaaa> [boleto ainda não integrado]`.
 
 ## Pendências antes de produção
 - [ ] **Boleto**: de onde vem o boleto que "segue" no e-mail (link, linha digitável ou PDF anexo) e seu vencimento.
 - [ ] **E-mail de atendimento** (`EMAIL_ATENDIMENTO`): o documento traz "&lt;incluir e-mail de atendimento ao beneficiário da Maida&gt;".
-- [ ] **Assunto do e-mail de 60 dias**: o documento não tem. Hoje está "Cancelamento do Plano por Inadimplência" (`config.py`, `ASSUNTOS`).
+- [ ] **Assuntos dos e-mails de 30 e 60 dias**: provisórios, ajustados ao texto no futuro (`config.py`, `ASSUNTOS`). Validar com a PO.
+- [ ] **Validar com a PO os novos textos** de 30 e 60 dias (`templates/suspensao.html` e `cancelamento.html`).
 - [ ] **Valores da situação do plano** no ERP: confirmar se são exatamente `SUSPENSO` e `CANCELADO`.
 - [x] Origem do e-mail: banco pessoa, tabela `pessoa`, cruzando `cpf_cnpj`. Falta confirmar o nome da coluna (`COLUNA_EMAIL`) e o nome do banco (`PESSOA_DB_NAME`).
 - [ ] Regra da 1ª execução (`DIAS_ATRASO_MAXIMO`).

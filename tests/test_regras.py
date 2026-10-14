@@ -56,17 +56,53 @@ def test_boleto_que_ainda_nao_venceu_nao_conta():
     assert regras.calcular_candidatos(dados, MARCOS, HOJE).empty
 
 
-def test_filtrar_ja_notificados_por_marco_e_ciclo():
+def _proxima(ultima, **kw):
     c = regras.calcular_candidatos(exemplo.gerar(HOJE), MARCOS, HOJE, situacao_exigida=EXIGIDA)
-    susp = c[c["marco_tipo"] == "suspensao"].iloc[0]
-    aviso = c[c["marco_tipo"] == "aviso"].iloc[0]
-    enviados = {
-        (susp["cpf"], susp["vencimento_base"]): 30,                         # já recebeu a suspensão
-        (aviso["cpf"], aviso["vencimento_base"] - timedelta(days=90)): 60,  # ciclo ANTERIOR: não bloqueia
+    return regras.proxima_carta(c, ultima, MARCOS, **kw).set_index("nome")
+
+
+def test_cartas_saem_em_sequencia_mesmo_com_atraso_alto():
+    # Primeira execução: todo mundo começa pela carta de 15 dias, inclusive quem tem 72 dias e está CANCELADO
+    r = _proxima({})
+    assert set(r["marco_tipo"]) == {"aviso"}
+    assert "Beneficiária Teste Cancelamento" in r.index
+
+
+def test_proxima_carta_respeita_intervalo_e_ciclo():
+    c = regras.calcular_candidatos(exemplo.gerar(HOJE), MARCOS, HOJE, situacao_exigida=EXIGIDA).set_index("nome")
+    canc = c.loc["Beneficiária Teste Cancelamento"]     # 72 dias, CANCELADO
+    susp = c.loc["Beneficiário Teste Suspensão"]         # 35 dias, SUSPENSO
+    aviso = c.loc["Beneficiária Teste Aviso"]            # 18 dias
+    ultima = {
+        (canc["cpf"], canc["vencimento_base"]): (15, 72 - 15),   # aviso há 15 dias -> já pode a de 30
+        (susp["cpf"], susp["vencimento_base"]): (15, 35 - 5),    # aviso há 5 dias -> espera
+        (aviso["cpf"], aviso["vencimento_base"] - timedelta(days=90)): (60, 100),  # ciclo anterior: não conta
     }
-    restantes = set(regras.filtrar_ja_notificados(c, enviados)["cpf"])
-    assert susp["cpf"] not in restantes
-    assert aviso["cpf"] in restantes
+    r = _proxima(ultima)
+    assert r.loc["Beneficiária Teste Cancelamento", "marco_tipo"] == "suspensao"
+    assert "Beneficiário Teste Suspensão" not in r.index
+    assert r.loc["Beneficiária Teste Aviso", "marco_tipo"] == "aviso"
+
+
+def test_quem_recebeu_as_tres_nao_recebe_mais_e_erp_continua_valendo():
+    c = regras.calcular_candidatos(exemplo.gerar(HOJE), MARCOS, HOJE, situacao_exigida=EXIGIDA).set_index("nome")
+    canc = c.loc["Beneficiária Teste Cancelamento"]
+    ativo = c.loc["Beneficiário Teste Aguardando ERP"]   # 40 dias, ATIVO
+    ultima = {
+        (canc["cpf"], canc["vencimento_base"]): (60, 10),
+        (ativo["cpf"], ativo["vencimento_base"]): (15, 10),  # aviso há 30 dias, mas o ERP não suspendeu
+    }
+    r = _proxima(ultima)
+    assert "Beneficiária Teste Cancelamento" not in r.index
+    assert "Beneficiário Teste Aguardando ERP" not in r.index
+
+
+def test_intervalo_configuravel():
+    c = regras.calcular_candidatos(exemplo.gerar(HOJE), MARCOS, HOJE, situacao_exigida=EXIGIDA).set_index("nome")
+    canc = c.loc["Beneficiária Teste Cancelamento"]
+    ultima = {(canc["cpf"], canc["vencimento_base"]): (15, 72 - 7)}   # aviso há 7 dias
+    assert "Beneficiária Teste Cancelamento" not in _proxima(ultima).index
+    assert _proxima(ultima, intervalo_minimo=7).loc["Beneficiária Teste Cancelamento", "marco_tipo"] == "suspensao"
 
 
 def test_email_valido():
