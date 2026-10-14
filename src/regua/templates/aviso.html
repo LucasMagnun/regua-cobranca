@@ -1,0 +1,16 @@
+{#- Fonte: notificacao_15_dias_versao_final_1.docx -#}
+{% extends "base.html" %}
+{% block conteudo %}
+<p>Verificamos a existência de débitos em atraso referentes ao Plano GDF SAÚDE.</p>
+<p>Para garantir a continuidade da cobertura médico-assistencial de V. Sa. e de seus dependentes, solicitamos que o
+  pagamento seja realizado.</p>
+{% with frase_apos_vencimento = "Após o vencimento, o boleto poderá ser solicitado pelos seguintes canais de atendimento:" %}
+  {% include "_boleto.html" %}
+{% endwith %}
+{% include "_canais.html" %}
+<p>Destaca-se que o atraso no pagamento superior a 30 (trinta) dias resultará na <strong>SUSPENSÃO</strong> do Plano.</p>
+<p>Além disso, o atraso por mais de 60 (sessenta) dias, consecutivos ou não, implica no cancelamento do Plano, sendo
+  que a nova adesão estará condicionada ao cumprimento de novos prazos de carência e da quitação integral do saldo
+  anterior em aberto atualizado e com aplicação de correção monetária, multa e juros.</p>
+{% with artigo = "o art. 72", nome_regulamento = "Regulamento do Plano GDF SAÚDE" %}{% include "_rodape.html" %}{% endwith %}
+{% endblock %}

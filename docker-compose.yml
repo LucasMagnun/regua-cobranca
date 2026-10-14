@@ -1,0 +1,39 @@
+# Ambiente LOCAL de testes: o job + um Postgres só para o controle de envios.
+#
+#   docker compose up -d controle-db          # sobe o banco de controle
+#   docker compose run --rm regua             # executa a régua uma vez
+#   docker compose run --rm regua --limpar-teste
+#
+# Em produção (Cloud Run Jobs) só a imagem do job é usada; o banco de controle será outro.
+
+services:
+  controle-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: regua
+      POSTGRES_USER: regua
+      POSTGRES_PASSWORD: regua
+    ports:
+      - "55432:5432"        # para abrir no DBeaver: localhost:55432, usuário/senha regua
+    volumes:
+      - controle-dados:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U regua -d regua"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  regua:
+    build: .
+    env_file: .env
+    environment:
+      # dentro do Docker o banco de controle é o serviço acima
+      CONTROLE_DB_URL: postgresql+psycopg2://regua:regua@controle-db:5432/regua
+    volumes:
+      - ./secrets:/secrets:ro   # coloque aqui a chave .pem (SSH_KEY_PATH=/secrets/lucas_castro.pem)
+    depends_on:
+      controle-db:
+        condition: service_healthy
+
+volumes:
+  controle-dados:

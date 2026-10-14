@@ -1,0 +1,16 @@
+{#- Parâmetro: frase_apos_vencimento -#}
+<p>Nesse sentido, segue boleto para pagamento, com vencimento em
+  {% if boleto -%}
+    <strong>{{ boleto.vencimento | data_br }}</strong>.
+  {%- else -%}
+    <strong style="background:#fde2e1;color:#b42318;">&lt;dd/mm/aaaa&gt; [boleto ainda não integrado]</strong>.
+  {%- endif %}
+  {{ frase_apos_vencimento }}</p>
+{% if boleto and boleto.link %}
+<p style="text-align:center;margin:20px 0;">
+  <a href="{{ boleto.link }}" style="background:#1f4e78;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:6px;display:inline-block;font-weight:bold;">Acessar boleto</a>
+</p>
+{% endif %}
+{% if boleto and boleto.linha_digitavel %}
+<p style="font-size:13px;">Linha digitável: <span style="font-family:monospace;">{{ boleto.linha_digitavel }}</span></p>
+{% endif %}
