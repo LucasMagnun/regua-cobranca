@@ -134,6 +134,8 @@ class Config:
     max_tentativas: int
     # Dias mínimos entre uma carta e a seguinte. None = a distância natural entre os marcos (15, depois 30).
     intervalo_entre_cartas: int | None = None
+    # Portal onde o beneficiário emite o boleto atualizado (Cobrança > Dívidas Atualizadas)
+    portal_url: str = "https://www.gdfsaude.df.gov.br/"
 
     @property
     def em_teste(self) -> bool:
@@ -231,4 +233,5 @@ def carregar() -> Config:
         pausa_entre_envios=pausa,
         max_tentativas=_inteiro("MAX_TENTATIVAS", 3) or 3,
         intervalo_entre_cartas=_inteiro("INTERVALO_ENTRE_CARTAS_DIAS"),
+        portal_url=_texto("PORTAL_URL", "https://www.gdfsaude.df.gov.br/") or "https://www.gdfsaude.df.gov.br/",
     )

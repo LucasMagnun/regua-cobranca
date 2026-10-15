@@ -1,12 +1,11 @@
-{#- Fonte: notificacao_15_dias_versao_final_1.docx -#}
+{#- Fonte: notificacao_15_dias_versao_final_1.docx
+    O boleto anexado foi substituído pela orientação de emitir o boleto no Portal do Beneficiário (_portal.html). -#}
 {% extends "base.html" %}
 {% block conteudo %}
 <p>Verificamos a existência de débitos em atraso referentes ao Plano GDF SAÚDE.</p>
 <p>Para garantir a continuidade da cobertura médico-assistencial de V. Sa. e de seus dependentes, solicitamos que o
   pagamento seja realizado.</p>
-{% with frase_apos_vencimento = "Após o vencimento, o boleto poderá ser solicitado pelos seguintes canais de atendimento:" %}
-  {% include "_boleto.html" %}
-{% endwith %}
+{% include "_portal.html" %}
 {% include "_canais.html" %}
 <p>Destaca-se que o atraso no pagamento superior a 30 (trinta) dias resultará na <strong>SUSPENSÃO</strong> do Plano.</p>
 <p>Além disso, o atraso por mais de 60 (sessenta) dias, consecutivos ou não, implica no cancelamento do Plano, sendo

@@ -101,14 +101,18 @@ def test_fluxo_completo_sem_duplicar(ambiente):
     assert st["Beneficiária Teste Sem Email|aviso"] == "SEM_EMAIL"
 
 
-def test_producao_nao_envia_sem_boleto(ambiente, monkeypatch):
+def test_producao_envia_para_o_beneficiario_com_link_do_portal(ambiente, monkeypatch):
     cfg, controle = ambiente
-    cfg = replace(cfg, modo="producao", email_destino_teste=None)
+    cfg = replace(cfg, modo="producao", email_destino_teste=None, email_atendimento="atendimento@exemplo.com")
     prov = Captura()
     r = executar(cfg, controle, prov, HOJE, DADOS)
-    assert r["enviados"] == 0 and r["erros"] == 0 and r["ignorados"] == 4
-    assert prov.enviados == []
-    assert "|aviso" not in "".join(k for k, v in _status(controle).items() if v != "SEM_EMAIL")   # nada pendente/erro
+    assert r["enviados"] == 4 and r["erros"] == 0
+    assert {e.para_email for e in prov.enviados} >= {"teste.aviso@exemplo.com", "teste.cancelamento@exemplo.com"}
+    e = prov.enviados[0]
+    assert not e.assunto.startswith("[TESTE]")
+    assert 'href="https://www.gdfsaude.df.gov.br/"' in e.html
+    assert "Dívidas Atualizadas" in e.html and "boleto ainda não integrado" not in e.html
+    assert "https://www.gdfsaude.df.gov.br/" in e.texto     # o link aparece também na versão em texto
 
 
 def test_erro_e_tentado_de_novo_ate_o_limite(ambiente):

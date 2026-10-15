@@ -134,11 +134,11 @@ O Cloud Run Jobs marca a execução como falha quando o código é diferente de 
 - Os e-mails de 30 e 60 dias **avisam** que o plano *será* suspenso/cancelado (ajuste aprovado pela PO; os
   documentos originais diziam "houve"). Por isso não dependem da situação no ERP. Se um dia voltarem a afirmar
   um fato, dá para exigir a situação com `SITUACAO_EXIGIDA=suspensao:SUSPENSO,cancelamento:CANCELADO`.
-- Os três textos citam um **boleto com vencimento**. Em produção, sem boleto o e-mail não sai: fica para a
-  próxima execução e não conta tentativa. Em teste, aparece `<dd/mm/aaaa> [boleto ainda não integrado]`.
+- Os e-mails **não levam boleto**: orientam o beneficiário a emitir o boleto atualizado no Portal do Beneficiário
+  (Cobrança > Dívidas Atualizadas), com botão para `PORTAL_URL` (texto em `templates/_portal.html`).
 
 ## Pendências antes de produção
-- [ ] **Boleto**: de onde vem o boleto que "segue" no e-mail (link, linha digitável ou PDF anexo) e seu vencimento.
+- [x] **Boleto**: substituído pelo link do Portal do Beneficiário (decisão da PO).
 - [ ] **E-mail de atendimento** (`EMAIL_ATENDIMENTO`): o documento traz "&lt;incluir e-mail de atendimento ao beneficiário da Maida&gt;".
 - [ ] **Assuntos dos e-mails de 30 e 60 dias**: provisórios, ajustados ao texto no futuro (`config.py`, `ASSUNTOS`). Validar com a PO.
 - [ ] **Validar com a PO os novos textos** de 30 e 60 dias (`templates/suspensao.html` e `cancelamento.html`).

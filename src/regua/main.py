@@ -75,13 +75,7 @@ def executar(cfg: config_mod.Config, controle: Controle, provedor=None, hoje: da
                      cfg.max_envios, len(fila) - cfg.max_envios)
             fila = fila[: cfg.max_envios]
 
-        sem_boleto = 0
         for c in fila:
-            # Os textos aprovados citam o boleto e seu vencimento: em produção, sem boleto não envia
-            # (e não consome tentativa; envia assim que o boleto estiver disponível).
-            if not cfg.em_teste and not c.get("boleto"):
-                sem_boleto += 1
-                continue
             destino = cfg.email_destino_teste if cfg.em_teste and cfg.email_destino_teste else c["email"]
             notif_id = controle.registrar_pendente(
                 execucao_id, cfg.modo_registro, c, provedor.nome, destino, cfg.max_tentativas
@@ -104,9 +98,6 @@ def executar(cfg: config_mod.Config, controle: Controle, provedor=None, hoje: da
                          mascarar_cpf(c["cpf"]), c["marco_tipo"], c["dias_atraso"], mascarar_email(destino))
             time.sleep(cfg.pausa_entre_envios)
 
-        if sem_boleto:
-            log.warning("Não enviados por falta de boleto (ficam para a próxima execução): %d", sem_boleto)
-            totais["ignorados"] += sem_boleto
         status = "OK" if totais["erros"] == 0 else "COM_ERROS"
         controle.finalizar_execucao(execucao_id, status, totais)
         log.info("Execução %d finalizada: %s | %s", execucao_id, status, totais)

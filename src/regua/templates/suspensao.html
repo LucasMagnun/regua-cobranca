@@ -1,17 +1,15 @@
 {#- Base: notificacao_30_dias_versao_final_1.docx
     Ajuste aprovado pela PO: o texto AVISA que o plano será suspenso (futuro), em vez de afirmar que já foi.
-    Ajuste: "novo boleto poderá solicitado" -> "novo boleto poderá ser solicitado" (palavra faltando no original) -#}
+    O boleto anexado foi substituído pela orientação de emitir o boleto no Portal do Beneficiário (_portal.html). -#}
 {% extends "base.html" %}
 {% block conteudo %}
-<p>Verificamos a existência de débitos em atraso há mais de 30 dias referente ao Plano GDF SAÚDE.</p>
+<p>Verificamos a existência de débitos em atraso há mais de 30 dias referentes ao Plano GDF SAÚDE.</p>
 <p>Sendo assim, informamos que, em razão do atraso no pagamento, o Plano do titular e de todos os dependentes será
   <strong>SUSPENSO</strong> caso o débito não seja regularizado. Dessa forma, para continuar a usufruir de toda a
   cobertura que o GDF SAÚDE oferece, é importante realizar a regularização de seu débito.</p>
 <p>No caso do atraso superar os 60 dias, a cobertura será totalmente <strong>CANCELADA</strong>, com necessidade de
   quitação do débito e cumprimento de novos prazos de carência para realizar nova adesão.</p>
-{% with frase_apos_vencimento = "Após o vencimento, novo boleto poderá ser solicitado pelos seguintes canais de atendimento:" %}
-  {% include "_boleto.html" %}
-{% endwith %}
+{% include "_portal.html" %}
 {% include "_canais.html" %}
 {% with artigo = "o art. 72", nome_regulamento = "Regulamento do Plano de Assistência à Saúde – GDF SAÚDE" %}{% include "_rodape.html" %}{% endwith %}
 {% endblock %}

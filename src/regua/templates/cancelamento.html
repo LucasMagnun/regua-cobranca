@@ -1,5 +1,6 @@
 {#- Base: notificacao_60_dias_versao_final_1.docx (o documento não tem assunto; ver ASSUNTOS em config.py)
-    Ajuste aprovado pela PO: o texto AVISA que o plano será cancelado (futuro), em vez de afirmar que já foi. -#}
+    Ajuste aprovado pela PO: o texto AVISA que o plano será cancelado (futuro), em vez de afirmar que já foi.
+    O boleto anexado foi substituído pela orientação de emitir o boleto no Portal do Beneficiário (_portal.html). -#}
 {% extends "base.html" %}
 {% block conteudo %}
 <p>Verificamos a existência de débitos em atraso há mais de 60 dias referentes ao Plano GDF SAÚDE.</p>
@@ -7,9 +8,7 @@
   <strong>CANCELADO</strong> caso o débito não seja regularizado.</p>
 <p>Esclarecemos que, em caso de cancelamento, uma nova adesão dependerá da quitação do débito em aberto, e o titular
   e seus dependentes estarão sujeitos ao cumprimento de novos prazos de carência.</p>
-{% with frase_apos_vencimento = "Após o vencimento, novo boleto poderá ser solicitado pelos seguintes canais de atendimento:" %}
-  {% include "_boleto.html" %}
-{% endwith %}
+{% include "_portal.html" %}
 {% include "_canais.html" %}
 {% with artigo = "o art. 72", nome_regulamento = "Regulamento do Plano de Assistência à Saúde – GDF SAÚDE" %}{% include "_rodape.html" %}{% endwith %}
 {% endblock %}

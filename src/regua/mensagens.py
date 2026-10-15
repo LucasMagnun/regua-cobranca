@@ -49,15 +49,8 @@ def html_para_texto(conteudo: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", "\n".join(linhas)).strip()
 
 
-class BoletoIndisponivel(Exception):
-    """Os textos aprovados citam um boleto com vencimento; sem ele, não envia em produção."""
-
-
 def montar(cfg: Config, marco: Marco, candidato: dict, para_email: str) -> Email:
     nome = str(candidato["nome"] or "").strip()
-    boleto = candidato.get("boleto") or None   # {'vencimento': date, 'link': str|None, 'linha_digitavel': str|None}
-    if boleto is None and not cfg.em_teste:
-        raise BoletoIndisponivel("Boleto para pagamento não disponível para este beneficiário")
 
     contexto = {
         "nome": nome,
@@ -65,7 +58,7 @@ def montar(cfg: Config, marco: Marco, candidato: dict, para_email: str) -> Email
         "valor_total": candidato["valor_total"],
         "qtd_cobrancas": candidato["qtd_cobrancas"],
         "itens": candidato["itens"],
-        "boleto": boleto,
+        "portal_url": cfg.portal_url,
         "email_atendimento": cfg.email_atendimento,
         "teste": cfg.em_teste,
         "email_original": candidato["email"] if isinstance(candidato["email"], str) else "(sem e-mail)",
