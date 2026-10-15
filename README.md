@@ -35,6 +35,19 @@ python rodar.py
 ```
 Rode sempre de dentro da pasta do projeto. Para limpar os testes: `python rodar.py --limpar-teste`.
 
+## Rodando numa VM (Google Compute Engine) com cron, sem Docker
+
+```bash
+sudo timedatectl set-timezone America/Sao_Paulo   # o cron passa a usar o horário de Brasília
+cd ~/regua-cobranca && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+cp .env.example .env && nano .env                 # CONTROLE_DB_URL com caminho absoluto (4 barras)
+bash scripts/rodar_cron.sh                         # teste manual; log em logs/regua-AAAA-MM-DD.log
+crontab -e                                         # 0 9 * * * /bin/bash /home/ubuntu/regua-cobranca/scripts/rodar_cron.sh
+```
+Na VM o disco é permanente, então o banco de controle pode ser o SQLite
+(`CONTROLE_DB_URL=sqlite:////home/ubuntu/regua-cobranca/controle_regua.db`). Faça backup dele (snapshot do disco):
+é ele que impede que alguém receba a mesma carta duas vezes.
+
 ## Rodando local com Docker (opcional)
 
 ```powershell

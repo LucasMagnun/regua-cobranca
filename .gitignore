@@ -7,3 +7,4 @@ secrets/*
 !secrets/.gitkeep
 *.pem
 *.db
+logs/
