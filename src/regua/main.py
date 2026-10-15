@@ -117,10 +117,39 @@ def executar(cfg: config_mod.Config, controle: Controle, provedor=None, hoje: da
         raise
 
 
+def enviar_previa(cfg, provedor) -> int:
+    """
+    Envia UMA carta de cada marco (15, 30, 60 dias) para EMAIL_DESTINO_TESTE, com dados fictícios.
+    Não lê os bancos de origem e não grava nada no banco de controle.
+    """
+    if not cfg.em_teste or not cfg.email_destino_teste:
+        log.error("--previa só funciona com MODO=teste e EMAIL_DESTINO_TESTE preenchido")
+        return 2
+    hoje = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+    candidatos = regras.calcular_candidatos(exemplo.gerar(hoje), cfg.marcos, hoje)
+    base = candidatos[regras_email_ok(candidatos)].iloc[0].to_dict()
+    erros = 0
+    for marco in cfg.marcos:
+        c = {**base, "marco_dias": marco.dias, "marco_tipo": marco.tipo, "dias_atraso": max(base["dias_atraso"], marco.dias)}
+        try:
+            mid = provedor.enviar(mensagens.montar(cfg, marco, c, cfg.email_destino_teste))
+            log.info("Prévia enviada | marco=%s para=%s id=%s", marco.tipo, mascarar_email(cfg.email_destino_teste), mid)
+        except Exception as exc:  # noqa: BLE001
+            erros += 1
+            log.error("Falha na prévia | marco=%s erro=%s", marco.tipo, exc)
+    return 0 if erros == 0 else 1
+
+
+def regras_email_ok(df):
+    return df["email"].map(regras.email_valido)
+
+
 def main(argv: list[str] | None = None) -> int:
     configurar_logs()
     parser = argparse.ArgumentParser(description="Régua de cobrança por e-mail")
     parser.add_argument("--limpar-teste", action="store_true", help="apaga registros de MODO=teste e sai")
+    parser.add_argument("--previa", action="store_true",
+                        help="envia 1 carta de cada tipo (15/30/60) para EMAIL_DESTINO_TESTE, com dados fictícios")
     args = parser.parse_args(argv)
 
     try:
@@ -136,6 +165,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     provedor = criar_provedor(cfg)
+    if args.previa:
+        try:
+            return enviar_previa(cfg, provedor)
+        finally:
+            if hasattr(provedor, "fechar"):
+                provedor.fechar()
     try:
         resultado = executar(cfg, controle, provedor)
     except Exception:

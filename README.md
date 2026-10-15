@@ -35,6 +35,9 @@ python rodar.py
 ```
 Rode sempre de dentro da pasta do projeto. Para limpar os testes: `python rodar.py --limpar-teste`.
 
+Para ver as 3 cartas na sua caixa (dados fictícios, não lê os bancos nem grava no controle):
+`python rodar.py --previa` (exige `MODO=teste` e `EMAIL_DESTINO_TESTE`).
+
 ## Rodando numa VM (Google Compute Engine) com cron, sem Docker
 
 ```bash

@@ -8,3 +8,4 @@ secrets/*
 *.pem
 *.db
 logs/
+backups/

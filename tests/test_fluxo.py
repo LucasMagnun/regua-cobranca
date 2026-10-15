@@ -139,3 +139,22 @@ def test_producao_exige_confirmacao(monkeypatch, controle_url):
     monkeypatch.delenv("CONFIRMAR_PRODUCAO", raising=False)
     with pytest.raises(config_mod.ConfigError, match="CONFIRMAR_PRODUCAO"):
         config_mod.carregar()
+
+
+def test_previa_envia_uma_carta_de_cada_tipo_sem_gravar_no_controle(ambiente):
+    from regua.main import enviar_previa
+    cfg, controle = ambiente
+    controle.aplicar_schema()
+    prov = Captura()
+    assert enviar_previa(cfg, prov) == 0
+    assert [e.tags[0] for e in prov.enviados] == ["aviso", "suspensao", "cancelamento"]
+    assert all(e.para_email == "caixa.teste@exemplo.com" and e.assunto.startswith("[TESTE]") for e in prov.enviados)
+    assert _status(controle) == {}
+
+
+def test_previa_recusa_producao(ambiente):
+    from regua.main import enviar_previa
+    cfg, _ = ambiente
+    prov = Captura()
+    assert enviar_previa(replace(cfg, modo="producao"), prov) == 2
+    assert prov.enviados == []
