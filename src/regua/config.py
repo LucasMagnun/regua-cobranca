@@ -34,12 +34,13 @@ class Marco:
 
 
 # Assuntos conforme os documentos aprovados (notificacao_15/30/60_dias_versao_final).
-# O documento de 60 dias veio sem assunto: o texto abaixo é provisório até confirmação.
 ASSUNTOS = {
     "aviso": "Regularização de Pendência",
-    # Provisórios (os textos passaram a avisar, no futuro): confirmar com a PO
+    # Documento: "Regularização de Pendência e Reativação do Plano de Saúde". Ajustado porque o texto
+    # passou a avisar a suspensão (futuro) e "reativação" pressupõe que já houve. Confirmar com a PO.
     "suspensao": "Regularização de Pendência e Aviso de Suspensão do Plano de Saúde",
-    "cancelamento": "Regularização de Pendência e Aviso de Cancelamento do Plano de Saúde",
+    # Conforme o documento notificacao_60_dias_versao_final_1.docx
+    "cancelamento": "Aviso de Cancelamento e de Necessidade de Regularização de Débito do Plano GDF Saúde",
 }
 
 MODOS = {"teste", "producao"}

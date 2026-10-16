@@ -140,7 +140,7 @@ O Cloud Run Jobs marca a execução como falha quando o código é diferente de 
 ## Pendências antes de produção
 - [x] **Boleto**: substituído pelo link do Portal do Beneficiário (decisão da PO).
 - [ ] **E-mail de atendimento** (`EMAIL_ATENDIMENTO`): o documento traz "&lt;incluir e-mail de atendimento ao beneficiário da Maida&gt;".
-- [ ] **Assuntos dos e-mails de 30 e 60 dias**: provisórios, ajustados ao texto no futuro (`config.py`, `ASSUNTOS`). Validar com a PO.
+- [ ] **Assunto do e-mail de 30 dias**: ajustado para "Aviso de Suspensão" (o documento dizia "Reativação"). Validar com a PO. O de 60 dias segue o documento.
 - [ ] **Validar com a PO os novos textos** de 30 e 60 dias (`templates/suspensao.html` e `cancelamento.html`).
 - [ ] **Valores da situação do plano** no ERP: confirmar se são exatamente `SUSPENSO` e `CANCELADO`.
 - [x] Origem do e-mail: banco pessoa, tabela `pessoa`, cruzando `cpf_cnpj`. Falta confirmar o nome da coluna (`COLUNA_EMAIL`) e o nome do banco (`PESSOA_DB_NAME`).
